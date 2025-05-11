@@ -6,6 +6,8 @@ added: message when mods are not backed up, including guessed loader and version
 
 added: when mods are already backed up, shows exact backup folder name that matches
 
+added: ability to compare existing backups with existing mods and overwrite if there is no more than 60% difference.
+
 changed: get\_mod\_files() now returns only .jar files to avoid irrelevant files
 
 changed: backup comparison uses sorted file lists to ensure correct match regardless of order
