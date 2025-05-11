@@ -69,6 +69,45 @@ def check_backup_status():
             print(f"{Fore.MAGENTA}[!] Detected loader: {detected_loader}, version: {detected_version}{Style.RESET_ALL}")
             return True
 
+    best_match = None
+    best_overlap = 0
+    for backup in backups:
+        path = os.path.join(BACKUPS_DIR, backup)
+        backup_mods = get_mod_files(path)
+
+        # check for partial match
+        common = set(mods_now) & set(backup_mods)
+        overlap_ratio = len(common) / max(len(mods_now), len(backup_mods))
+        if overlap_ratio > best_overlap:
+            best_overlap = overlap_ratio
+            best_match = (backup, backup_mods, list(common))
+
+    if best_overlap >= 0.6 and best_match:
+        backup_name, backup_mods, common_mods = best_match
+        added = list(set(mods_now) - set(backup_mods))
+        removed = list(set(backup_mods) - set(mods_now))
+
+        print(f"{Fore.YELLOW}[~] Mods are not exactly backed up, but similar to '{backup_name}' ({int(best_overlap*100)}% match).{Style.RESET_ALL}")
+        if added:
+            print(f"{Fore.CYAN}[+] New mods not in backup:{Style.RESET_ALL}")
+            for m in added:
+                print(f"    - {m}")
+        if removed:
+            print(f"{Fore.CYAN}[-] Missing mods that existed in backup:{Style.RESET_ALL}")
+            for m in removed:
+                print(f"    - {m}")
+
+        update_backup = input(f"{Fore.YELLOW}[?] Do you want to update the backup '{backup_name}' with these changes? (y/n): {Style.RESET_ALL}").strip().lower()
+        if update_backup == 'y':
+            backup_mods(backup_name, mods_now)
+            print(f"{Fore.GREEN}[*] Backup updated successfully.{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.CYAN}[~] Skipping backup update.{Style.RESET_ALL}")
+        
+        # Regardless of the choice, print loader and version
+        print(f"{Fore.MAGENTA}[!] Detected loader: {detected_loader}, version: {detected_version}{Style.RESET_ALL}")
+        return False
+
     print(f"{Fore.RED}[x] These mods are not backed up.{Style.RESET_ALL}")
     print(f"{Fore.MAGENTA}[!] Detected loader: {detected_loader}, version: {detected_version}{Style.RESET_ALL}")
     return False
@@ -81,14 +120,16 @@ def clear_folder(folder):
         else:
             shutil.rmtree(path)
 
-def backup_mods():
-    loader, version = detect_loader_and_version(MODS_DIR)
-    modpack_name = input(f"{Fore.YELLOW}Enter a modpack name: {Style.RESET_ALL}").strip()
-    if not modpack_name:
-        print(f"{Fore.RED}[x] Modpack name cannot be empty.{Style.RESET_ALL}")
-        return
+def backup_mods(backup_name=None, mods=None):
+    if not backup_name or not mods:
+        loader, version = detect_loader_and_version(MODS_DIR)
+        modpack_name = input(f"{Fore.YELLOW}Enter a modpack name: {Style.RESET_ALL}").strip()
+        if not modpack_name:
+            print(f"{Fore.RED}[x] Modpack name cannot be empty.{Style.RESET_ALL}")
+            return
 
-    backup_name = f"{modpack_name}-{loader}-{version}"
+        backup_name = f"{modpack_name}-{loader}-{version}"
+
     backup_path = os.path.join(BACKUPS_DIR, backup_name)
 
     if os.path.exists(backup_path):
