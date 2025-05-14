@@ -1,4 +1,4 @@
-# Mod Folder Manager v1.2
+# Minecraft Mod Manager (with Python) v2
 
 added: automatic detection of mod loader and minecraft version from .jar filenames inside mods folder
 
